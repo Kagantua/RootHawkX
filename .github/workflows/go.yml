@@ -1,0 +1,37 @@
+# .github/workflows/build-linux-amd64.yml
+name: Build RootHawkX for Linux x64
+
+on:
+  # 当向 main 或 master 分支推送代码时触发
+  push:
+    branches: [ "main", "master" ]
+  # 允许手动触发工作流
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        # 使用项目 go.mod 中声明的 Go 版本，或指定稳定版本
+        go-version: '1.21'
+        check-latest: false
+
+    - name: Build for Linux x64
+      run: |
+        # 设置目标操作系统和架构
+        GOOS=linux GOARCH=amd64 go build -o RootHawkX-linux-amd64 -ldflags="-s -w" .
+      working-directory: ./
+
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: RootHawkX-linux-amd64
+        path: RootHawkX-linux-amd64
+        # 保留二进制文件的可执行权限
+        retention-days: 30
