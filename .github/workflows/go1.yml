@@ -1,0 +1,39 @@
+# .github/workflows/build-linux-amd64.yml
+name: Build RootHawkX for Linux x64
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+        check-latest: false
+
+    # 安装编译 C 代码所需的依赖
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc make
+
+    - name: Build for Linux x64 with CGO enabled
+      run: |
+        # 启用 CGO，设置目标操作系统和架构，并进行编译
+        CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o RootHawkX-linux-amd64 -ldflags="-s -w" .
+      working-directory: ./
+
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: RootHawkX-linux-amd64
+        path: RootHawkX-linux-amd64
+        retention-days: 30
